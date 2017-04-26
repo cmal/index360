@@ -95,19 +95,47 @@
 
 (defonce chan (atom nil))
 
+(defonce clients (atom {}))
+
 ;; http-ket websocket
 (defn handler
   [request]
   (log/info request)
   (with-channel request channel
+    (reset! clients assoc channel true)
     (on-close channel (fn [status]
                         (println "channel closed: " status)))
-    (on-receive channel (fn [data] ;; echo it back
+    #_(on-receive channel (fn [data] ;; echo it back
                           (println "received message: " data)
-                          (send! channel data)
-                          #_(send! channel data)))))
+                          (send! channel data)))))
 
-(run-server handler {:port 9090})
+;; send location information, id x y
+;; id : 1~10
+;; x,y : 0~640, 0~480
+(defn send-loc!
+  [id x y]
+  (future (loop []
+            (doseq [client @clients]
+              (send! (key client) (generate-string [id x y]))))))
+
+(defonce locs (atom {}))
+
+(defn rand-init-loc
+  []
+  (doseq [id (range 10)]
+    (swap! locs
+           assoc id [(rand-int 640) (rand-int 480)])))
+
+(defn rand-loc-run
+  []
+  (loop []
+    (Thread/sleep 100)
+    (let [id (rand-int 10)
+          x (min 640 (+ (rand-int 10) (get-in @locs id 0)))
+          y (min 480 (+ (rand-int 10) (get-in @locs id 1)))]
+      (swap! locs
+             assoc id [x y])
+      (send-loc! id x y))))
 
 (log/merge-config!
    {:timestamp-opts {:timezone (java.util.TimeZone/getTimeZone "Asia/Shanghai")}
