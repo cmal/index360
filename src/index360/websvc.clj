@@ -116,7 +116,7 @@
   [id x y]
   (future (loop []
             (doseq [client @clients]
-              (send! (key client) (generate-string [id x y]))))))
+              (send! (key client) (str [id x y]))))))
 
 (defonce locs (atom {}))
 
@@ -127,8 +127,8 @@
            assoc id [(rand-int 640) (rand-int 480)])))
 
 (defn rand-loc-run
-  []
-  (loop []
+  [num]
+  (loop [i (range num)]
     (Thread/sleep 100)
     (let [id (rand-int 10)
           x (min 640 (+ (rand-int 10) (get-in @locs id 0)))
