@@ -9,9 +9,16 @@
                  [clojurewerkz/quartzite "2.0.0"]         ;; 定时任务
                  [clj-time "0.13.0"]
                  [cheshire "5.7.0"]                       ;; JSON encode and decode
+
                  [com.taoensso/timbre "4.8.0"]            ;; Profiling
                  [com.taoensso/tufte "1.1.1"]
+
+                 [http-kit "2.2.0"]                       ;; for websocket
+                 [com.taoensso/sente "1.11.0"]            ;; for websocket
+
                  [org.clojure/tools.nrepl "0.2.12"]
+                 #_[org.clojure/tools.logging "0.3.1"]      ;; for repl logging?
+
                  [com.novemberain/monger "3.1.0"]
                  [org.clojure/core.async "0.3.441"]
                  [ring "1.5.0"]                           ;; WEB HTTP framework

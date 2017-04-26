@@ -11,10 +11,16 @@
             [ring.middleware.keyword-params :as keyword-params]
             [ring.middleware.multipart-params :as mp]
 
+            [taoensso.sente  :as sente]
+            [taoensso.sente.server-adapters.http-kit      :refer (get-sch-adapter)]
+
             [taoensso.timbre :as log]
-            [mount.core :refer [defstate]]
+            [taoensso.timbre.appenders.core :as appenders]
+
+            [mount.core :as mount]
             )
   (:use
+   [org.httpkit.server]
    [ring.middleware.json]
    [ring.util.json-response]
    [ring.adapter.jetty]
@@ -32,11 +38,26 @@
   {"status" false
    "error" "page not found"})
 
+(let [{:keys [ch-recv send-fn connected-uids
+              ajax-post-fn ajax-get-or-ws-handshake-fn]}
+      (sente/make-channel-socket! (http/get-sch-adapter) {})]
+
+  (def ring-ajax-post                ajax-post-fn)
+  (def ring-ajax-get-or-ws-handshake ajax-get-or-ws-handshake-fn)
+  (def ch-chsk                       ch-recv) ; ChannelSocket's receive channel
+  (def chsk-send!                    send-fn) ; ChannelSocket's send API fn
+  (def connected-uids                connected-uids) ; Watchable, read-only atom
+  )
+
 (defroutes main-routes
 
   (GET "/test" [] (api-test))
   (GET "/so-media/:query" [] api-so-media)
   (GET "/so-index/:query" [] api-so-index)
+
+  ;; websocket channel
+  (GET  "/chsk" req (ring-ajax-get-or-ws-handshake req))
+  (POST "/chsk" req (ring-ajax-post                req))
 
   (route/not-found (page-not-found)))
 
@@ -54,6 +75,61 @@
   (run-jetty svc-app {:port port :join false :join? false}))
 
 
-(defstate websvc-app
+(mount/defstate websvc-app
   :start (start-svc (:http-port @g-config))
   :stop (.stop websvc-app))
+
+(mount/start #'websvc-app)
+
+
+(chsk-send! ; Using Sente
+  [:request-id {:name "Rich Hickey" :type "Awesome"}] ; Event
+  8000 ; Timeout
+  ;; Optional callback:
+  (fn [reply] ; Reply is arbitrary Clojure data
+    (if (sente/cb-success? reply) ; Checks for :chsk/closed, :chsk/timeout, :chsk/error
+      (println reply)
+      (println "error"))))
+
+
+
+(defonce chan (atom nil))
+
+;; http-ket websocket
+(defn handler
+  [request]
+  (log/info request)
+  (with-channel request channel
+    (on-close channel (fn [status]
+                        (println "channel closed: " status)))
+    (on-receive channel (fn [data] ;; echo it back
+                          (println "received message: " data)
+                          (send! channel data)
+                          #_(send! channel data)))))
+
+(run-server handler {:port 9090})
+
+(log/merge-config!
+   {:timestamp-opts {:timezone (java.util.TimeZone/getTimeZone "Asia/Shanghai")}
+    :appenders {:spit (appenders/spit-appender
+                       {:fname "index360.log"})}})
+
+(defonce server (atom nil))
+
+(defn stop-server []
+  (when-not (nil? @server)
+    ;; graceful shutdown: wait 100ms for existing requests to be finished
+    ;; :timeout is optional, when no timeout, stop immediately
+    (@server :timeout 100)
+    (reset! server nil)))
+
+(defn start-server []
+  ;; The #' is useful when you want to hot-reload code
+  ;; You may want to take a look: https://github.com/clojure/tools.namespace
+  ;; and http://http-kit.org/migration.html#reload
+  (reset! server (run-server #'handler {:port 9090})))
+
+;; (stop-server) (start-server)
+;; and resources/ws.html onMessage do onSend
+;; always loop, never end
+;; This is a working version.
