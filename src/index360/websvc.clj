@@ -13,6 +13,7 @@
 
             [taoensso.sente  :as sente]
             [taoensso.sente.server-adapters.http-kit      :refer (get-sch-adapter)]
+            [taoensso.encore :as enc :refer (swap-in! reset-in! swapped have have! have?)]
 
             [taoensso.timbre :as log]
             [taoensso.timbre.appenders.core :as appenders]
@@ -40,7 +41,7 @@
 
 (let [{:keys [ch-recv send-fn connected-uids
               ajax-post-fn ajax-get-or-ws-handshake-fn]}
-      (sente/make-channel-socket! (http/get-sch-adapter) {})]
+      (sente/make-channel-socket! (get-sch-adapter) {})]
 
   (def ring-ajax-post                ajax-post-fn)
   (def ring-ajax-get-or-ws-handshake ajax-get-or-ws-handshake-fn)
@@ -82,7 +83,7 @@
 (mount/start #'websvc-app)
 
 
-(chsk-send! ; Using Sente
+#_(chsk-send! ; Using Sente
   [:request-id {:name "Rich Hickey" :type "Awesome"}] ; Event
   8000 ; Timeout
   ;; Optional callback:
@@ -100,12 +101,11 @@
 ;; http-ket websocket
 (defn handler
   [request]
-  (log/info request)
   (with-channel request channel
-    (reset! clients assoc channel true)
+    (swap! clients assoc channel true)
     (on-close channel (fn [status]
                         (println "channel closed: " status)))
-    #_(on-receive channel (fn [data] ;; echo it back
+    (on-receive channel (fn [data] ;; echo it back
                           (println "received message: " data)
                           (send! channel data)))))
 
@@ -128,11 +128,11 @@
 
 (defn rand-loc-run
   [num]
-  (loop [i (range num)]
+  (doseq [i (range num)]
     (Thread/sleep 100)
     (let [id (rand-int 10)
-          x (min 640 (+ (rand-int 10) (get-in @locs id 0)))
-          y (min 480 (+ (rand-int 10) (get-in @locs id 1)))]
+          x (min 640 (+ (rand-int 10) (get-in @locs [id 0])))
+          y (min 480 (+ (rand-int 10) (get-in @locs [id 1])))]
       (swap! locs
              assoc id [x y])
       (send-loc! id x y))))

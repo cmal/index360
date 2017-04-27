@@ -1,0 +1,12 @@
+* Todos
+** DONE websocket server/client                      <2017-04-27 Thu 08:54>
+   CLOSED: [2017-04-27 Thu 15:30]
+
+  Link: file:~/gits/index360/src/index360/websvc.clj::%3B%3B%20and%20http://http-kit.org/migration.html#reload
+
+*** server [2/2]
+    - [X] server启动和退出
+    - [X] 发送随机位置
+      (send-loc! id x y) ;; id: node 的id， [x y]: node的坐标
+      (rand-loc-run num) ;; NUM is 发送信息个数
+
