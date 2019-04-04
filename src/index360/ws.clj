@@ -184,7 +184,8 @@
 
 (defn start-at-port! [port] (start-router!) (start-web-server! port))
 
-(defn -main "For `lein run`, etc." [] (start-at-port! 19009))
+;; NOTE: run this manually!
+(defn run [] (start-at-port! 19009))
 
 (comment
   (start-at-port! 19009)

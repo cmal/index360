@@ -10,3 +10,18 @@
       (send-loc! id x y) ;; id: node 的id， [x y]: node的坐标
       (rand-loc-run num) ;; NUM is 发送信息个数
 
+
+
+** DONE add ws.clj
+   CLOSED: [2017-04-28 Fri 09:21]
+to wrap/pack ws message
+
+*** DONE move websvc.clj中的ws内容 to ws.clj
+    CLOSED: [2017-04-28 Fri 09:21]
+
+remove websvc.clj中 用http-kit实现的server
+将send-loc!方法转移到ws.clj中
+
+
+** DONE svg diff
+   CLOSED: [2017-04-28 Fri 09:21]

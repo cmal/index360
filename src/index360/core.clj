@@ -15,7 +15,7 @@
 
 
 (defn action-360index [& options]
-  ;; (start-nrepl-server (:repl-port @g-config))
+  (start-nrepl-server (:repl-port @g-config))
 
   ;; (start-index360-schedule)
   )
